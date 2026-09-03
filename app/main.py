@@ -2,293 +2,353 @@ from datetime import datetime
 
 
 # =========================
-# Task Model
+# Book Model
 # =========================
 
-class Task:
-    def __init__(self, task_id, title, description, priority="medium"):
-        self.id = task_id
+class Book:
+    def __init__(self, book_id, title, author, category):
+        self.id = book_id
         self.title = title
-        self.description = description
-        self.priority = priority
-        self.completed = False
-        self.created_at = datetime.now()
+        self.author = author
+        self.category = category
+        self.available = True
+        self.added_at = datetime.now()
 
-    def complete_task(self):
-        self.completed = True
+    def borrow_book(self):
+        if not self.available:
+            print("\nBook is already borrowed.")
+            return False
 
-    def update_task(self, title=None, description=None, priority=None):
+        self.available = False
+        return True
+
+    def return_book(self):
+        if self.available:
+            print("\nBook is already available.")
+            return False
+
+        self.available = True
+        return True
+
+    def update_book(self, title=None, author=None, category=None):
         if title:
             self.title = title
 
-        if description:
-            self.description = description
+        if author:
+            self.author = author
 
-        if priority:
-            self.priority = priority
+        if category:
+            self.category = category
 
     def display(self):
-        status = "Completed" if self.completed else "Pending"
+        status = "Available" if self.available else "Borrowed"
 
-        print(f"\nTask ID: {self.id}")
+        print(f"\nBook ID: {self.id}")
         print(f"Title: {self.title}")
-        print(f"Description: {self.description}")
-        print(f"Priority: {self.priority}")
+        print(f"Author: {self.author}")
+        print(f"Category: {self.category}")
         print(f"Status: {status}")
-        print(f"Created: {self.created_at}")
+        print(f"Added: {self.added_at}")
 
 
 # =========================
-# Task Manager
+# Library Manager
 # =========================
 
-class TaskManager:
+class LibraryManager:
     def __init__(self):
-        self.tasks = []
+        self.books = []
         self.next_id = 1
 
-    def create_task(self, title, description, priority="medium"):
-        task = Task(
+    def add_book(self, title, author, category):
+        book = Book(
             self.next_id,
             title,
-            description,
-            priority
+            author,
+            category
         )
 
-        self.tasks.append(task)
+        self.books.append(book)
         self.next_id += 1
 
-        print("\nTask created successfully!")
-        return task
+        print("\nBook added successfully!")
+        return book
 
-    def get_all_tasks(self):
-        if not self.tasks:
-            print("\nNo tasks found.")
+    def get_all_books(self):
+        if not self.books:
+            print("\nNo books found.")
             return
 
-        print("\n========== ALL TASKS ==========")
+        print("\n========== ALL BOOKS ==========")
 
-        for task in self.tasks:
-            task.display()
+        for book in self.books:
+            book.display()
 
-    def get_task(self, task_id):
-        for task in self.tasks:
-            if task.id == task_id:
-                return task
+    def get_book(self, book_id):
+        for book in self.books:
+            if book.id == book_id:
+                return book
 
         return None
 
-    def complete_task(self, task_id):
-        task = self.get_task(task_id)
+    def borrow_book(self, book_id):
+        book = self.get_book(book_id)
 
-        if task is None:
-            print("\nTask not found.")
+        if book is None:
+            print("\nBook not found.")
             return
 
-        task.complete_task()
+        if book.borrow_book():
+            print(f"\nBook {book_id} borrowed successfully!")
 
-        print(f"\nTask {task_id} completed successfully!")
+    def return_book(self, book_id):
+        book = self.get_book(book_id)
 
-    def update_task(
+        if book is None:
+            print("\nBook not found.")
+            return
+
+        if book.return_book():
+            print(f"\nBook {book_id} returned successfully!")
+
+    def update_book(
         self,
-        task_id,
+        book_id,
         title=None,
-        description=None,
-        priority=None
+        author=None,
+        category=None
     ):
-        task = self.get_task(task_id)
+        book = self.get_book(book_id)
 
-        if task is None:
-            print("\nTask not found.")
+        if book is None:
+            print("\nBook not found.")
             return
 
-        task.update_task(
+        book.update_book(
             title,
-            description,
-            priority
+            author,
+            category
         )
 
-        print(f"\nTask {task_id} updated successfully!")
+        print(f"\nBook {book_id} updated successfully!")
 
-    def delete_task(self, task_id):
-        task = self.get_task(task_id)
+    def delete_book(self, book_id):
+        book = self.get_book(book_id)
 
-        if task is None:
-            print("\nTask not found.")
+        if book is None:
+            print("\nBook not found.")
             return
 
-        self.tasks.remove(task)
+        self.books.remove(book)
 
-        print(f"\nTask {task_id} deleted successfully!")
+        print(f"\nBook {book_id} deleted successfully!")
 
-    def search_tasks(self, keyword):
+    def search_books(self, keyword):
         results = []
 
-        for task in self.tasks:
-            if keyword.lower() in task.title.lower():
-                results.append(task)
+        for book in self.books:
+            if (
+                keyword.lower() in book.title.lower()
+                or keyword.lower() in book.author.lower()
+                or keyword.lower() in book.category.lower()
+            ):
+                results.append(book)
 
         if not results:
-            print("\nNo matching tasks found.")
+            print("\nNo matching books found.")
             return
 
         print("\n========== SEARCH RESULTS ==========")
 
-        for task in results:
-            task.display()
+        for book in results:
+            book.display()
 
-    def get_completed_tasks(self):
-        completed = [
-            task for task in self.tasks
-            if task.completed
+    def get_available_books(self):
+        available = [
+            book for book in self.books
+            if book.available
         ]
 
-        if not completed:
-            print("\nNo completed tasks.")
+        if not available:
+            print("\nNo available books.")
             return
 
-        print("\n========== COMPLETED TASKS ==========")
+        print("\n========== AVAILABLE BOOKS ==========")
 
-        for task in completed:
-            task.display()
+        for book in available:
+            book.display()
 
-    def get_pending_tasks(self):
-        pending = [
-            task for task in self.tasks
-            if not task.completed
+    def get_borrowed_books(self):
+        borrowed = [
+            book for book in self.books
+            if not book.available
         ]
 
-        if not pending:
-            print("\nNo pending tasks.")
+        if not borrowed:
+            print("\nNo borrowed books.")
             return
 
-        print("\n========== PENDING TASKS ==========")
+        print("\n========== BORROWED BOOKS ==========")
 
-        for task in pending:
-            task.display()
+        for book in borrowed:
+            book.display()
 
 
 # =========================
-# Application
+# Application Menu
 # =========================
 
 def show_menu():
     print("\n")
     print("================================")
-    print("       TASK MANAGEMENT APP")
+    print("      LIBRARY MANAGEMENT APP")
     print("================================")
-    print("1. Create task")
-    print("2. Show all tasks")
-    print("3. Complete task")
-    print("4. Update task")
-    print("5. Delete task")
-    print("6. Search task")
-    print("7. Show completed tasks")
-    print("8. Show pending tasks")
-    print("9. Exit")
+    print("1. Add book")
+    print("2. Show all books")
+    print("3. Borrow book")
+    print("4. Return book")
+    print("5. Update book")
+    print("6. Delete book")
+    print("7. Search books")
+    print("8. Show available books")
+    print("9. Show borrowed books")
+    print("10. Exit")
     print("================================")
 
+
+# =========================
+# Main Application
+# =========================
 
 def main():
-    manager = TaskManager()
 
-    # Example tasks
-    manager.create_task(
-        "Learn Python",
-        "Study Python classes and objects",
-        "high"
+    library = LibraryManager()
+
+    # Example books
+
+    library.add_book(
+        "Python Crash Course",
+        "Eric Matthes",
+        "Programming"
     )
 
-    manager.create_task(
-        "Learn Git",
-        "Practice Git commands",
-        "medium"
+    library.add_book(
+        "Clean Code",
+        "Robert C. Martin",
+        "Software Engineering"
     )
 
-    manager.create_task(
-        "Build API",
-        "Create a backend REST API",
-        "high"
+    library.add_book(
+        "The Pragmatic Programmer",
+        "Andrew Hunt",
+        "Programming"
     )
 
     while True:
+
         show_menu()
 
         choice = input("Enter your choice: ")
 
+        # Add book
         if choice == "1":
-            title = input("Enter task title: ")
-            description = input("Enter description: ")
-            priority = input(
-                "Enter priority (low/medium/high): "
-            )
 
-            manager.create_task(
+            title = input("Enter book title: ")
+            author = input("Enter author: ")
+            category = input("Enter category: ")
+
+            library.add_book(
                 title,
-                description,
-                priority
+                author,
+                category
             )
 
+        # Show all books
         elif choice == "2":
-            manager.get_all_tasks()
 
+            library.get_all_books()
+
+        # Borrow book
         elif choice == "3":
-            task_id = int(
-                input("Enter task ID: ")
+
+            book_id = int(
+                input("Enter book ID: ")
             )
 
-            manager.complete_task(task_id)
+            library.borrow_book(book_id)
 
+        # Return book
         elif choice == "4":
-            task_id = int(
-                input("Enter task ID: ")
+
+            book_id = int(
+                input("Enter book ID: ")
+            )
+
+            library.return_book(book_id)
+
+        # Update book
+        elif choice == "5":
+
+            book_id = int(
+                input("Enter book ID: ")
             )
 
             title = input(
                 "Enter new title: "
             )
 
-            description = input(
-                "Enter new description: "
+            author = input(
+                "Enter new author: "
             )
 
-            priority = input(
-                "Enter new priority: "
+            category = input(
+                "Enter new category: "
             )
 
-            manager.update_task(
-                task_id,
+            library.update_book(
+                book_id,
                 title,
-                description,
-                priority
+                author,
+                category
             )
 
-        elif choice == "5":
-            task_id = int(
-                input("Enter task ID: ")
-            )
-
-            manager.delete_task(task_id)
-
+        # Delete book
         elif choice == "6":
+
+            book_id = int(
+                input("Enter book ID: ")
+            )
+
+            library.delete_book(book_id)
+
+        # Search books
+        elif choice == "7":
+
             keyword = input(
                 "Enter search keyword: "
             )
 
-            manager.search_tasks(keyword)
+            library.search_books(keyword)
 
-        elif choice == "7":
-            manager.get_completed_tasks()
-
+        # Available books
         elif choice == "8":
-            manager.get_pending_tasks()
 
+            library.get_available_books()
+
+        # Borrowed books
         elif choice == "9":
-            print("\nGoodbye!")
+
+            library.get_borrowed_books()
+
+        # Exit
+        elif choice == "10":
+
+            print("\nThank you for using the Library Management App!")
             break
 
         else:
-            print("\nInvalid choice.")
+
+            print("\nInvalid choice. Please try again.")
 
 
 # =========================
