@@ -1,424 +1,458 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 # =========================================================
-# Book Model
+# Product Model
 # =========================================================
 
-class Book:
+class Product:
 
-    def __init__(self, book_id, title, author, category):
-        self.id = book_id
-        self.title = title
-        self.author = author
+    def __init__(self, product_id, name, category, price, quantity):
+        self.id = product_id
+        self.name = name
         self.category = category
-        self.available = True
-        self.borrowed_by = None
-        self.borrowed_at = None
-        self.due_date = None
+        self.price = price
+        self.quantity = quantity
         self.added_at = datetime.now()
 
-    def borrow_book(self, member):
+    def add_stock(self, quantity):
+        self.quantity += quantity
 
-        if not self.available:
-            print("\nBook is already borrowed.")
+    def remove_stock(self, quantity):
+
+        if quantity > self.quantity:
+            print("\nNot enough stock.")
             return False
 
-        self.available = False
-        self.borrowed_by = member
-        self.borrowed_at = datetime.now()
-
-        # Borrow period = 14 days
-        self.due_date = datetime.now() + timedelta(days=14)
-
+        self.quantity -= quantity
         return True
 
-    def return_book(self):
+    def update_product(
+        self,
+        name=None,
+        category=None,
+        price=None,
+        quantity=None
+    ):
 
-        if self.available:
-            print("\nBook is already available.")
-            return False
-
-        fine = self.calculate_fine()
-
-        self.available = True
-        self.borrowed_by = None
-        self.borrowed_at = None
-        self.due_date = None
-
-        return fine
-
-    def calculate_fine(self):
-
-        if self.due_date is None:
-            return 0
-
-        today = datetime.now()
-
-        if today <= self.due_date:
-            return 0
-
-        overdue_days = (today - self.due_date).days
-
-        # Fine = ₹5 per overdue day
-        return overdue_days * 5
-
-    def update_book(self, title=None, author=None, category=None):
-
-        if title:
-            self.title = title
-
-        if author:
-            self.author = author
+        if name:
+            self.name = name
 
         if category:
             self.category = category
 
+        if price is not None:
+            self.price = price
+
+        if quantity is not None:
+            self.quantity = quantity
+
     def display(self):
 
-        status = "Available" if self.available else "Borrowed"
-
         print("\n--------------------------------")
-        print(f"Book ID     : {self.id}")
-        print(f"Title       : {self.title}")
-        print(f"Author      : {self.author}")
-        print(f"Category    : {self.category}")
-        print(f"Status      : {status}")
-
-        if not self.available:
-            print(f"Borrowed By : {self.borrowed_by.name}")
-            print(f"Due Date    : {self.due_date}")
-
-        print(f"Added       : {self.added_at}")
+        print(f"Product ID : {self.id}")
+        print(f"Name       : {self.name}")
+        print(f"Category   : {self.category}")
+        print(f"Price      : ₹{self.price}")
+        print(f"Stock      : {self.quantity}")
+        print(f"Added      : {self.added_at}")
         print("--------------------------------")
 
 
 # =========================================================
-# Member Model
+# Customer Model
 # =========================================================
 
-class Member:
+class Customer:
 
-    def __init__(self, member_id, name, email):
+    def __init__(self, customer_id, name, phone):
 
-        self.id = member_id
+        self.id = customer_id
         self.name = name
-        self.email = email
-        self.borrowed_books = []
-        self.joined_at = datetime.now()
+        self.phone = phone
+        self.cart = []
+        self.total_spent = 0
 
-    def borrow_book(self, book):
+    def add_to_cart(self, product, quantity):
 
-        if len(self.borrowed_books) >= 3:
-            print("\nMember cannot borrow more than 3 books.")
+        if quantity <= 0:
+            print("\nInvalid quantity.")
             return False
 
-        self.borrowed_books.append(book)
+        if quantity > product.quantity:
+            print("\nNot enough stock.")
+            return False
+
+        self.cart.append({
+            "product": product,
+            "quantity": quantity
+        })
 
         return True
 
-    def return_book(self, book):
-
-        if book in self.borrowed_books:
-            self.borrowed_books.remove(book)
-            return True
-
-        return False
+    def clear_cart(self):
+        self.cart.clear()
 
     def display(self):
 
         print("\n--------------------------------")
-        print(f"Member ID       : {self.id}")
-        print(f"Name            : {self.name}")
-        print(f"Email           : {self.email}")
-        print(f"Books Borrowed  : {len(self.borrowed_books)}")
-        print(f"Joined At       : {self.joined_at}")
+        print(f"Customer ID : {self.id}")
+        print(f"Name        : {self.name}")
+        print(f"Phone       : {self.phone}")
+        print(f"Cart Items  : {len(self.cart)}")
+        print(f"Total Spent : ₹{self.total_spent}")
         print("--------------------------------")
 
 
 # =========================================================
-# Library Manager
+# Store Manager
 # =========================================================
 
-class LibraryManager:
+class StoreManager:
 
     def __init__(self):
 
-        self.books = []
-        self.members = []
+        self.products = []
+        self.customers = []
 
-        self.next_book_id = 1
-        self.next_member_id = 1
+        self.next_product_id = 1
+        self.next_customer_id = 1
+
+        self.total_sales = 0
+        self.total_orders = 0
 
     # =====================================================
-    # BOOK MANAGEMENT
+    # PRODUCT MANAGEMENT
     # =====================================================
 
-    def add_book(self, title, author, category):
-
-        book = Book(
-            self.next_book_id,
-            title,
-            author,
-            category
-        )
-
-        self.books.append(book)
-        self.next_book_id += 1
-
-        print("\nBook added successfully!")
-
-        return book
-
-    def get_book(self, book_id):
-
-        for book in self.books:
-
-            if book.id == book_id:
-                return book
-
-        return None
-
-    def get_all_books(self):
-
-        if not self.books:
-            print("\nNo books found.")
-            return
-
-        print("\n========== ALL BOOKS ==========")
-
-        for book in self.books:
-            book.display()
-
-    def update_book(
+    def add_product(
         self,
-        book_id,
-        title=None,
-        author=None,
-        category=None
+        name,
+        category,
+        price,
+        quantity
     ):
 
-        book = self.get_book(book_id)
-
-        if book is None:
-            print("\nBook not found.")
-            return
-
-        book.update_book(
-            title,
-            author,
-            category
-        )
-
-        print("\nBook updated successfully!")
-
-    def delete_book(self, book_id):
-
-        book = self.get_book(book_id)
-
-        if book is None:
-            print("\nBook not found.")
-            return
-
-        if not book.available:
-            print("\nCannot delete a borrowed book.")
-            return
-
-        self.books.remove(book)
-
-        print("\nBook deleted successfully!")
-
-    # =====================================================
-    # MEMBER MANAGEMENT
-    # =====================================================
-
-    def add_member(self, name, email):
-
-        member = Member(
-            self.next_member_id,
+        product = Product(
+            self.next_product_id,
             name,
-            email
+            category,
+            price,
+            quantity
         )
 
-        self.members.append(member)
-        self.next_member_id += 1
+        self.products.append(product)
 
-        print("\nMember added successfully!")
+        self.next_product_id += 1
 
-        return member
+        print("\nProduct added successfully!")
 
-    def get_member(self, member_id):
+    def get_product(self, product_id):
 
-        for member in self.members:
+        for product in self.products:
 
-            if member.id == member_id:
-                return member
+            if product.id == product_id:
+                return product
 
         return None
 
-    def get_all_members(self):
+    def show_all_products(self):
 
-        if not self.members:
-            print("\nNo members found.")
+        if not self.products:
+            print("\nNo products found.")
             return
 
-        print("\n========== ALL MEMBERS ==========")
+        print("\n========== ALL PRODUCTS ==========")
 
-        for member in self.members:
-            member.display()
+        for product in self.products:
+            product.display()
+
+    def update_product(
+        self,
+        product_id,
+        name=None,
+        category=None,
+        price=None,
+        quantity=None
+    ):
+
+        product = self.get_product(product_id)
+
+        if product is None:
+            print("\nProduct not found.")
+            return
+
+        product.update_product(
+            name,
+            category,
+            price,
+            quantity
+        )
+
+        print("\nProduct updated successfully!")
+
+    def delete_product(self, product_id):
+
+        product = self.get_product(product_id)
+
+        if product is None:
+            print("\nProduct not found.")
+            return
+
+        self.products.remove(product)
+
+        print("\nProduct deleted successfully!")
 
     # =====================================================
-    # BORROW BOOK
+    # SEARCH PRODUCTS
     # =====================================================
 
-    def borrow_book(self, book_id, member_id):
-
-        book = self.get_book(book_id)
-        member = self.get_member(member_id)
-
-        if book is None:
-            print("\nBook not found.")
-            return
-
-        if member is None:
-            print("\nMember not found.")
-            return
-
-        if not book.available:
-            print("\nBook is already borrowed.")
-            return
-
-        if not member.borrow_book(book):
-            return
-
-        book.borrow_book(member)
-
-        print("\nBook borrowed successfully!")
-
-        print(f"Book       : {book.title}")
-        print(f"Member     : {member.name}")
-        print(f"Due Date   : {book.due_date}")
-
-    # =====================================================
-    # RETURN BOOK
-    # =====================================================
-
-    def return_book(self, book_id):
-
-        book = self.get_book(book_id)
-
-        if book is None:
-            print("\nBook not found.")
-            return
-
-        if book.available:
-            print("\nBook is already available.")
-            return
-
-        member = book.borrowed_by
-
-        fine = book.return_book()
-
-        member.return_book(book)
-
-        print("\nBook returned successfully!")
-
-        if fine > 0:
-            print(f"Late Fine: ₹{fine}")
-        else:
-            print("No fine.")
-
-    # =====================================================
-    # SEARCH
-    # =====================================================
-
-    def search_books(self, keyword):
+    def search_products(self, keyword):
 
         results = []
 
         keyword = keyword.lower()
 
-        for book in self.books:
+        for product in self.products:
 
             if (
-                keyword in book.title.lower()
-                or keyword in book.author.lower()
-                or keyword in book.category.lower()
+                keyword in product.name.lower()
+                or keyword in product.category.lower()
             ):
-                results.append(book)
+                results.append(product)
 
         if not results:
-            print("\nNo matching books found.")
+            print("\nNo matching products found.")
             return
 
         print("\n========== SEARCH RESULTS ==========")
 
-        for book in results:
-            book.display()
+        for product in results:
+            product.display()
 
     # =====================================================
-    # AVAILABLE BOOKS
+    # LOW STOCK PRODUCTS
     # =====================================================
 
-    def get_available_books(self):
+    def show_low_stock(self):
 
-        available_books = [
-            book for book in self.books
-            if book.available
+        low_stock = [
+            product
+            for product in self.products
+            if product.quantity <= 5
         ]
 
-        if not available_books:
-            print("\nNo available books.")
+        if not low_stock:
+            print("\nNo low-stock products.")
             return
 
-        print("\n========== AVAILABLE BOOKS ==========")
+        print("\n========== LOW STOCK ==========")
 
-        for book in available_books:
-            book.display()
+        for product in low_stock:
+            product.display()
 
     # =====================================================
-    # BORROWED BOOKS
+    # CUSTOMER MANAGEMENT
     # =====================================================
 
-    def get_borrowed_books(self):
+    def add_customer(self, name, phone):
 
-        borrowed_books = [
-            book for book in self.books
-            if not book.available
-        ]
+        customer = Customer(
+            self.next_customer_id,
+            name,
+            phone
+        )
 
-        if not borrowed_books:
-            print("\nNo borrowed books.")
+        self.customers.append(customer)
+
+        self.next_customer_id += 1
+
+        print("\nCustomer added successfully!")
+
+    def get_customer(self, customer_id):
+
+        for customer in self.customers:
+
+            if customer.id == customer_id:
+                return customer
+
+        return None
+
+    def show_all_customers(self):
+
+        if not self.customers:
+            print("\nNo customers found.")
             return
 
-        print("\n========== BORROWED BOOKS ==========")
+        print("\n========== ALL CUSTOMERS ==========")
 
-        for book in borrowed_books:
-            book.display()
+        for customer in self.customers:
+            customer.display()
 
     # =====================================================
-    # STATISTICS
+    # ADD TO CART
+    # =====================================================
+
+    def add_to_cart(
+        self,
+        customer_id,
+        product_id,
+        quantity
+    ):
+
+        customer = self.get_customer(customer_id)
+        product = self.get_product(product_id)
+
+        if customer is None:
+            print("\nCustomer not found.")
+            return
+
+        if product is None:
+            print("\nProduct not found.")
+            return
+
+        if customer.add_to_cart(
+            product,
+            quantity
+        ):
+
+            print(
+                f"\n{product.name} "
+                f"added to cart."
+            )
+
+    # =====================================================
+    # SHOW CART
+    # =====================================================
+
+    def show_cart(self, customer_id):
+
+        customer = self.get_customer(customer_id)
+
+        if customer is None:
+            print("\nCustomer not found.")
+            return
+
+        if not customer.cart:
+            print("\nCart is empty.")
+            return
+
+        print("\n========== SHOPPING CART ==========")
+
+        total = 0
+
+        for item in customer.cart:
+
+            product = item["product"]
+            quantity = item["quantity"]
+
+            item_total = product.price * quantity
+
+            print(
+                f"{product.name} x {quantity} "
+                f"= ₹{item_total}"
+            )
+
+            total += item_total
+
+        print("--------------------------------")
+        print(f"Subtotal: ₹{total}")
+
+    # =====================================================
+    # CHECKOUT
+    # =====================================================
+
+    def checkout(self, customer_id):
+
+        customer = self.get_customer(customer_id)
+
+        if customer is None:
+            print("\nCustomer not found.")
+            return
+
+        if not customer.cart:
+            print("\nCart is empty.")
+            return
+
+        subtotal = 0
+
+        print("\n========== BILL ==========")
+
+        for item in customer.cart:
+
+            product = item["product"]
+            quantity = item["quantity"]
+
+            if quantity > product.quantity:
+
+                print(
+                    f"\nNot enough stock for "
+                    f"{product.name}."
+                )
+
+                return
+
+            item_total = product.price * quantity
+
+            subtotal += item_total
+
+        # Discount
+        if subtotal >= 2000:
+            discount = subtotal * 0.10
+
+        elif subtotal >= 1000:
+            discount = subtotal * 0.05
+
+        else:
+            discount = 0
+
+        final_amount = subtotal - discount
+
+        # Remove stock
+        for item in customer.cart:
+
+            product = item["product"]
+            quantity = item["quantity"]
+
+            product.remove_stock(quantity)
+
+        customer.total_spent += final_amount
+
+        self.total_sales += final_amount
+        self.total_orders += 1
+
+        print(f"Subtotal : ₹{subtotal:.2f}")
+        print(f"Discount : ₹{discount:.2f}")
+        print("--------------------------------")
+        print(f"Total    : ₹{final_amount:.2f}")
+        print("--------------------------------")
+
+        customer.clear_cart()
+
+        print("\nPurchase completed successfully!")
+
+    # =====================================================
+    # STORE STATISTICS
     # =====================================================
 
     def show_statistics(self):
 
-        total_books = len(self.books)
+        total_products = len(self.products)
 
-        available_books = len([
-            book for book in self.books
-            if book.available
-        ])
+        total_customers = len(self.customers)
 
-        borrowed_books = total_books - available_books
+        total_stock = sum(
+            product.quantity
+            for product in self.products
+        )
 
-        total_members = len(self.members)
+        print("\n========== STORE STATISTICS ==========")
 
-        print("\n========== LIBRARY STATISTICS ==========")
-
-        print(f"Total Books       : {total_books}")
-        print(f"Available Books   : {available_books}")
-        print(f"Borrowed Books    : {borrowed_books}")
-        print(f"Total Members     : {total_members}")
+        print(f"Products       : {total_products}")
+        print(f"Customers      : {total_customers}")
+        print(f"Total Stock    : {total_stock}")
+        print(f"Total Orders   : {self.total_orders}")
+        print(f"Total Sales    : ₹{self.total_sales:.2f}")
 
 
 # =========================================================
@@ -429,27 +463,28 @@ def show_menu():
 
     print("\n")
     print("==========================================")
-    print("        LIBRARY MANAGEMENT SYSTEM")
+    print("       GROCERY STORE MANAGEMENT SYSTEM")
     print("==========================================")
 
-    print("\nBOOK MANAGEMENT")
-    print("1. Add book")
-    print("2. Show all books")
-    print("3. Update book")
-    print("4. Delete book")
-    print("5. Search books")
-    print("6. Show available books")
-    print("7. Show borrowed books")
+    print("\nPRODUCT MANAGEMENT")
+    print("1. Add product")
+    print("2. Show all products")
+    print("3. Update product")
+    print("4. Delete product")
+    print("5. Search products")
+    print("6. Show low-stock products")
 
-    print("\nMEMBER MANAGEMENT")
-    print("8. Add member")
-    print("9. Show all members")
+    print("\nCUSTOMER MANAGEMENT")
+    print("7. Add customer")
+    print("8. Show all customers")
 
-    print("\nLIBRARY OPERATIONS")
-    print("10. Borrow book")
-    print("11. Return book")
-    print("12. Show statistics")
+    print("\nSHOPPING")
+    print("9. Add product to cart")
+    print("10. Show cart")
+    print("11. Checkout")
 
+    print("\nOTHER")
+    print("12. Show store statistics")
     print("13. Exit")
 
     print("==========================================")
@@ -461,48 +496,59 @@ def show_menu():
 
 def main():
 
-    library = LibraryManager()
+    store = StoreManager()
 
     # -----------------------------------------------------
-    # Sample Books
+    # Sample Products
     # -----------------------------------------------------
 
-    library.add_book(
-        "Python Crash Course",
-        "Eric Matthes",
-        "Programming"
+    store.add_product(
+        "Rice",
+        "Grocery",
+        60,
+        50
     )
 
-    library.add_book(
-        "Clean Code",
-        "Robert C. Martin",
-        "Software Engineering"
+    store.add_product(
+        "Milk",
+        "Dairy",
+        30,
+        40
     )
 
-    library.add_book(
-        "The Pragmatic Programmer",
-        "Andrew Hunt",
-        "Programming"
+    store.add_product(
+        "Bread",
+        "Bakery",
+        40,
+        25
     )
 
-    library.add_book(
-        "Introduction to Algorithms",
-        "Thomas H. Cormen",
-        "Algorithms"
+    store.add_product(
+        "Apples",
+        "Fruits",
+        120,
+        20
+    )
+
+    store.add_product(
+        "Soap",
+        "Personal Care",
+        45,
+        30
     )
 
     # -----------------------------------------------------
-    # Sample Members
+    # Sample Customers
     # -----------------------------------------------------
 
-    library.add_member(
+    store.add_customer(
         "Muneer",
-        "muneer@example.com"
+        "9876543210"
     )
 
-    library.add_member(
+    store.add_customer(
         "Rahul",
-        "rahul@example.com"
+        "9876501234"
     )
 
     # -----------------------------------------------------
@@ -516,72 +562,95 @@ def main():
         choice = input("\nEnter your choice: ")
 
         # -------------------------------------------------
-        # Add Book
+        # Add Product
         # -------------------------------------------------
 
         if choice == "1":
 
-            title = input("Enter book title: ")
-            author = input("Enter author: ")
-            category = input("Enter category: ")
+            try:
 
-            library.add_book(
-                title,
-                author,
-                category
-            )
+                name = input("Enter product name: ")
+                category = input("Enter category: ")
+
+                price = float(
+                    input("Enter price: ")
+                )
+
+                quantity = int(
+                    input("Enter quantity: ")
+                )
+
+                store.add_product(
+                    name,
+                    category,
+                    price,
+                    quantity
+                )
+
+            except ValueError:
+
+                print("\nInvalid price or quantity.")
 
         # -------------------------------------------------
-        # Show Books
+        # Show Products
         # -------------------------------------------------
 
         elif choice == "2":
 
-            library.get_all_books()
+            store.show_all_products()
 
         # -------------------------------------------------
-        # Update Book
+        # Update Product
         # -------------------------------------------------
 
         elif choice == "3":
 
             try:
-                book_id = int(
-                    input("Enter book ID: ")
+
+                product_id = int(
+                    input("Enter product ID: ")
                 )
 
-                title = input("Enter new title: ")
-                author = input("Enter new author: ")
+                name = input("Enter new name: ")
                 category = input("Enter new category: ")
 
-                library.update_book(
-                    book_id,
-                    title,
-                    author,
-                    category
+                price = float(
+                    input("Enter new price: ")
+                )
+
+                quantity = int(
+                    input("Enter new quantity: ")
+                )
+
+                store.update_product(
+                    product_id,
+                    name,
+                    category,
+                    price,
+                    quantity
                 )
 
             except ValueError:
 
-                print("\nPlease enter a valid book ID.")
+                print("\nInvalid input.")
 
         # -------------------------------------------------
-        # Delete Book
+        # Delete Product
         # -------------------------------------------------
 
         elif choice == "4":
 
             try:
 
-                book_id = int(
-                    input("Enter book ID: ")
+                product_id = int(
+                    input("Enter product ID: ")
                 )
 
-                library.delete_book(book_id)
+                store.delete_product(product_id)
 
             except ValueError:
 
-                print("\nPlease enter a valid book ID.")
+                print("\nInvalid product ID.")
 
         # -------------------------------------------------
         # Search
@@ -590,91 +659,106 @@ def main():
         elif choice == "5":
 
             keyword = input(
-                "Enter title, author or category: "
+                "Enter product name or category: "
             )
 
-            library.search_books(keyword)
+            store.search_products(keyword)
 
         # -------------------------------------------------
-        # Available Books
+        # Low Stock
         # -------------------------------------------------
 
         elif choice == "6":
 
-            library.get_available_books()
+            store.show_low_stock()
 
         # -------------------------------------------------
-        # Borrowed Books
+        # Add Customer
         # -------------------------------------------------
 
         elif choice == "7":
 
-            library.get_borrowed_books()
+            name = input("Enter customer name: ")
+            phone = input("Enter phone number: ")
+
+            store.add_customer(
+                name,
+                phone
+            )
 
         # -------------------------------------------------
-        # Add Member
+        # Show Customers
         # -------------------------------------------------
 
         elif choice == "8":
 
-            name = input("Enter member name: ")
-            email = input("Enter member email: ")
-
-            library.add_member(
-                name,
-                email
-            )
+            store.show_all_customers()
 
         # -------------------------------------------------
-        # Show Members
+        # Add To Cart
         # -------------------------------------------------
 
         elif choice == "9":
 
-            library.get_all_members()
+            try:
+
+                customer_id = int(
+                    input("Enter customer ID: ")
+                )
+
+                product_id = int(
+                    input("Enter product ID: ")
+                )
+
+                quantity = int(
+                    input("Enter quantity: ")
+                )
+
+                store.add_to_cart(
+                    customer_id,
+                    product_id,
+                    quantity
+                )
+
+            except ValueError:
+
+                print("\nInvalid input.")
 
         # -------------------------------------------------
-        # Borrow Book
+        # Show Cart
         # -------------------------------------------------
 
         elif choice == "10":
 
             try:
 
-                book_id = int(
-                    input("Enter book ID: ")
+                customer_id = int(
+                    input("Enter customer ID: ")
                 )
 
-                member_id = int(
-                    input("Enter member ID: ")
-                )
-
-                library.borrow_book(
-                    book_id,
-                    member_id
-                )
+                store.show_cart(customer_id)
 
             except ValueError:
 
-                print("\nPlease enter valid IDs.")
+                print("\nInvalid customer ID.")
 
         # -------------------------------------------------
-        # Return Book
+        # Checkout
         # -------------------------------------------------
 
         elif choice == "11":
 
             try:
 
-                book_id = int(
-                    input("Enter book ID: ")
+                customer_id = int(
+                    input("Enter customer ID: ")
                 )
 
-                library.return_book(book_id)
+                store.checkout(customer_id)
 
             except ValueError:
 
-                print("\nPlease enter a valid book ID.")
+                print("\nInvalid customer ID.")
 
         # -------------------------------------------------
         # Statistics
@@ -682,7 +766,7 @@ def main():
 
         elif choice == "12":
 
-            library.show_statistics()
+            store.show_statistics()
 
         # -------------------------------------------------
         # Exit
@@ -692,20 +776,16 @@ def main():
 
             print(
                 "\nThank you for using "
-                "the Library Management System!"
+                "the Grocery Store Management System!"
             )
 
             break
-
-        # -------------------------------------------------
-        # Invalid Choice
-        # -------------------------------------------------
 
         else:
 
             print(
                 "\nInvalid choice. "
-                "Please select a valid option."
+                "Please try again."
             )
 
 
@@ -715,3 +795,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
