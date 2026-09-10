@@ -6,60 +6,67 @@ class Product:
         self.stock = stock
 
 
+class Customer:
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+        self.cart = []
+
+
 class Store:
     def __init__(self):
         self.products = []
-        self.cart = []
+        self.customers = []
 
     def add_product(self):
-        name = input("Product name: ")
+        name = input("Name: ")
         price = float(input("Price: "))
         stock = int(input("Stock: "))
-
         self.products.append(
             Product(len(self.products) + 1, name, price, stock)
         )
-        print("Product added!")
 
-    def show_products(self):
+    def add_customer(self):
+        name = input("Customer name: ")
+        self.customers.append(
+            Customer(len(self.customers) + 1, name)
+        )
+
+    def products_list(self):
         for p in self.products:
-            print(p.id, p.name, "₹", p.price, "Stock:", p.stock)
+            print(p.id, p.name, p.price, p.stock)
 
-    def add_to_cart(self):
-        id = int(input("Product ID: "))
+    def add_cart(self):
+        cid = int(input("Customer ID: "))
+        pid = int(input("Product ID: "))
         qty = int(input("Quantity: "))
 
-        for p in self.products:
-            if p.id == id:
-                if qty <= p.stock:
-                    self.cart.append((p, qty))
-                    print("Added to cart!")
-                else:
-                    print("Not enough stock.")
-                return
+        c = next((x for x in self.customers if x.id == cid), None)
+        p = next((x for x in self.products if x.id == pid), None)
 
-        print("Product not found.")
+        if c and p and qty <= p.stock:
+            c.cart.append((p, qty))
+            print("Added!")
+        else:
+            print("Invalid request")
 
     def checkout(self):
-        if not self.cart:
-            print("Cart is empty.")
+        cid = int(input("Customer ID: "))
+        c = next((x for x in self.customers if x.id == cid), None)
+
+        if not c or not c.cart:
+            print("Cart empty")
             return
 
-        total = 0
+        total = sum(p.price * q for p, q in c.cart)
 
-        for p, qty in self.cart:
-            total += p.price * qty
-            p.stock -= qty
+        discount = 0.10 if total >= 2000 else 0.05 if total >= 1000 else 0
 
-        if total >= 2000:
-            discount = total * 0.10
-        elif total >= 1000:
-            discount = total * 0.05
-        else:
-            discount = 0
+        for p, q in c.cart:
+            p.stock -= q
 
-        print("Total:", total - discount)
-        self.cart.clear()
+        print("Total:", total * (1 - discount))
+        c.cart.clear()
 
 
 store = Store()
@@ -67,24 +74,26 @@ store = Store()
 while True:
     print("""
 1. Add Product
-2. Show Products
-3. Add to Cart
-4. Checkout
-5. Exit
+2. Add Customer
+3. Show Products
+4. Add to Cart
+5. Checkout
+6. Exit
 """)
 
-    choice = input("Choice: ")
+    ch = input("Choice: ")
 
-    if choice == "1":
+    if ch == "1":
         store.add_product()
-    elif choice == "2":
-        store.show_products()
-    elif choice == "3":
-        store.add_to_cart()
-    elif choice == "4":
+    elif ch == "2":
+        store.add_customer()
+    elif ch == "3":
+        store.products_list()
+    elif ch == "4":
+        store.add_cart()
+    elif ch == "5":
         store.checkout()
-    elif choice == "5":
-        print("Thank you!")
+    elif ch == "6":
         break
     else:
         print("Invalid choice")
