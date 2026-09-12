@@ -1,205 +1,167 @@
 
+from dataclasses import dataclass
+
+
+@dataclass
 class Product:
-    def __init__(self, code, name, price, stock):
-        self.code = code
-        self.name = name
-        self.price = price
-        self.stock = stock
-
-    def is_available(self, quantity):
-        return quantity > 0 and quantity <= self.stock
+    id: int
+    name: str
+    price: float
+    stock: int
 
 
+@dataclass
 class Customer:
-    def __init__(self, code, name):
-        self.code = code
-        self.name = name
-        self.cart = []
-
-    def add_to_cart(self, product, quantity):
-        self.cart.append({
-            "product": product,
-            "quantity": quantity
-        })
-
-    def empty_cart(self):
-        self.cart = []
+    id: int
+    name: str
+    cart: list
 
 
 class Store:
     def __init__(self):
-        self.products = []
-        self.customers = []
-        self.product_code = 1
-        self.customer_code = 1
+        self.inventory = {}
+        self.users = {}
+        self.p_id = 1
+        self.c_id = 1
 
-    def get_product(self, code):
-        for product in self.products:
-            if product.code == code:
-                return product
-        return None
+    def add_product(self):
+        name = input("Enter product name: ")
+        price = float(input("Enter price: "))
+        stock = int(input("Enter stock: "))
 
-    def get_customer(self, code):
-        for customer in self.customers:
-            if customer.code == code:
-                return customer
-        return None
-
-    def add_new_product(self):
-        product_name = input("Product name: ")
-        product_price = float(input("Product price: "))
-        product_stock = int(input("Product stock: "))
-
-        product = Product(
-            self.product_code,
-            product_name,
-            product_price,
-            product_stock
+        self.inventory[self.p_id] = Product(
+            self.p_id, name, price, stock
         )
 
-        self.products.append(product)
-        self.product_code += 1
+        print("Product added with ID:", self.p_id)
+        self.p_id += 1
 
-        print("Product added.")
+    def add_customer(self):
+        name = input("Enter customer name: ")
 
-    def register_customer(self):
-        customer_name = input("Customer name: ")
-
-        customer = Customer(
-            self.customer_code,
-            customer_name
+        self.users[self.c_id] = Customer(
+            self.c_id, name, []
         )
 
-        self.customers.append(customer)
-        self.customer_code += 1
+        print("Customer added with ID:", self.c_id)
+        self.c_id += 1
 
-        print("Customer registered.")
+    def display_products(self):
+        print("\n----- PRODUCT LIST -----")
 
-    def list_products(self):
-        if not self.products:
+        if not self.inventory:
             print("No products available.")
             return
 
-        print("\nID\tName\tPrice\tStock")
-
-        for product in self.products:
+        for product in self.inventory.values():
             print(
-                product.code,
-                product.name,
-                product.price,
-                product.stock,
-                sep="\t"
+                f"{product.id}. {product.name} | "
+                f"₹{product.price} | Stock: {product.stock}"
             )
 
-    def add_item(self):
-        customer_code = int(input("Customer ID: "))
-        product_code = int(input("Product ID: "))
-        quantity = int(input("Quantity: "))
+    def add_to_cart(self):
+        customer_id = int(input("Enter customer ID: "))
+        product_id = int(input("Enter product ID: "))
+        quantity = int(input("Enter quantity: "))
 
-        customer = self.get_customer(customer_code)
-        product = self.get_product(product_code)
+        customer = self.users.get(customer_id)
+        product = self.inventory.get(product_id)
 
-        if customer is None:
-            print("Customer not found.")
+        if customer is None or product is None:
+            print("Invalid customer or product.")
             return
 
-        if product is None:
-            print("Product not found.")
-            return
-
-        if not product.is_available(quantity):
+        if quantity <= 0 or quantity > product.stock:
             print("Invalid quantity or insufficient stock.")
             return
 
-        customer.add_to_cart(product, quantity)
-        print("Item added successfully.")
+        customer.cart.append((product_id, quantity))
+        print("Added to cart.")
 
-    def calculate_bill(self, customer):
-        amount = 0
+    def get_total(self, customer):
+        total = 0
 
-        for item in customer.cart:
-            product = item["product"]
-            quantity = item["quantity"]
-            amount += product.price * quantity
+        for product_id, quantity in customer.cart:
+            product = self.inventory[product_id]
+            total += product.price * quantity
 
-        return amount
+        return total
 
-    def checkout_customer(self):
-        customer_code = int(input("Customer ID: "))
-        customer = self.get_customer(customer_code)
+    def checkout(self):
+        customer_id = int(input("Enter customer ID: "))
+        customer = self.users.get(customer_id)
 
         if customer is None:
             print("Customer not found.")
             return
 
-        if not customer.cart:
-            print("No items in cart.")
+        if len(customer.cart) == 0:
+            print("Cart is empty.")
             return
 
-        total = self.calculate_bill(customer)
+        total = self.get_total(customer)
 
         if total >= 2000:
-            discount = 10
+            discount = 0.10
         elif total >= 1000:
-            discount = 5
+            discount = 0.05
         else:
             discount = 0
 
-        payable = total - (total * discount / 100)
+        payable = total * (1 - discount)
 
-        for item in customer.cart:
-            product = item["product"]
-            quantity = item["quantity"]
-            product.stock -= quantity
+        for product_id, quantity in customer.cart:
+            self.inventory[product_id].stock -= quantity
 
-        print("\n--------- CUSTOMER BILL ---------")
+        print("\n========= RECEIPT =========")
         print("Customer:", customer.name)
-        print("Original amount:", total)
-        print("Discount:", discount, "%")
-        print("Final amount:", payable)
-        print("---------------------------------")
+        print("Subtotal:", total)
+        print("Discount:", discount * 100, "%")
+        print("Amount payable:", payable)
+        print("===========================")
 
-        customer.empty_cart()
+        customer.cart.clear()
 
 
-def menu():
-    shop = Store()
+def main():
+    store = Store()
 
     while True:
         print("""
-========= STORE MANAGEMENT =========
+========= STORE MENU =========
 
-1. Add New Product
-2. Register New Customer
-3. List All Products
-4. Add Item to Cart
-5. Checkout Customer
-6. Quit
+1. Add Product
+2. Add Customer
+3. Display Products
+4. Add to Cart
+5. Checkout
+6. Exit
 """)
 
-        option = input("Enter option: ")
+        choice = input("Enter choice: ")
 
-        if option == "1":
-            shop.add_new_product()
+        if choice == "1":
+            store.add_product()
 
-        elif option == "2":
-            shop.register_customer()
+        elif choice == "2":
+            store.add_customer()
 
-        elif option == "3":
-            shop.list_products()
+        elif choice == "3":
+            store.display_products()
 
-        elif option == "4":
-            shop.add_item()
+        elif choice == "4":
+            store.add_to_cart()
 
-        elif option == "5":
-            shop.checkout_customer()
+        elif choice == "5":
+            store.checkout()
 
-        elif option == "6":
-            print("Goodbye!")
+        elif choice == "6":
+            print("Thank you!")
             break
 
         else:
-            print("Wrong option.")
+            print("Invalid choice.")
 
 
-menu()
+if __name__ == "__main__":
+    main()
