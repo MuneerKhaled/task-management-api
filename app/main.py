@@ -1,188 +1,191 @@
 
-class Product:
-    def __init__(self, number, title, cost, quantity):
-        self.number = number
-        self.title = title
-        self.cost = cost
-        self.quantity = quantity
-
-    def display(self):
-        print(
-            f"ID: {self.number} | "
-            f"Name: {self.title} | "
-            f"Price: {self.cost} | "
-            f"Stock: {self.quantity}"
-        )
+class Item:
+    def __init__(self, code, description, amount, available):
+        self.code = code
+        self.description = description
+        self.amount = amount
+        self.available = available
 
 
-class Customer:
-    def __init__(self, number, username):
-        self.number = number
-        self.username = username
-        self.shopping_cart = []
-
-    def add_item(self, product, amount):
-        self.shopping_cart.append([product, amount])
+class Buyer:
+    def __init__(self, code, fullname):
+        self.code = code
+        self.fullname = fullname
+        self.basket = []
 
 
-class ShoppingStore:
+class Market:
     def __init__(self):
-        self.inventory = []
-        self.people = []
+        self.catalog = []
+        self.buyers = []
+        self.next_item_code = 100
+        self.next_buyer_code = 1
 
-    def search_product(self, number):
-        for product in self.inventory:
-            if product.number == number:
-                return product
-        return None
+    def register_item(self):
+        description = input("Enter item name: ")
+        amount = float(input("Enter item price: "))
+        available = int(input("Enter available stock: "))
 
-    def search_customer(self, number):
-        for customer in self.people:
-            if customer.number == number:
-                return customer
-        return None
-
-    def create_product(self):
-        title = input("Product name: ")
-        cost = float(input("Product price: "))
-        quantity = int(input("Available quantity: "))
-
-        new_product = Product(
-            len(self.inventory) + 1,
-            title,
-            cost,
-            quantity
+        item = Item(
+            self.next_item_code,
+            description,
+            amount,
+            available
         )
 
-        self.inventory.append(new_product)
-        print("New product created.")
+        self.catalog.append(item)
+        self.next_item_code += 1
 
-    def create_customer(self):
-        username = input("Customer name: ")
+        print("Item registered successfully.")
 
-        new_customer = Customer(
-            len(self.people) + 1,
-            username
+    def register_buyer(self):
+        fullname = input("Enter buyer name: ")
+
+        buyer = Buyer(
+            self.next_buyer_code,
+            fullname
         )
 
-        self.people.append(new_customer)
-        print("New customer registered.")
+        self.buyers.append(buyer)
+        self.next_buyer_code += 1
 
-    def display_inventory(self):
-        if len(self.inventory) == 0:
-            print("Inventory is empty.")
+        print("Buyer registered successfully.")
+
+    def locate_item(self, code):
+        for item in self.catalog:
+            if item.code == code:
+                return item
+        return None
+
+    def locate_buyer(self, code):
+        for buyer in self.buyers:
+            if buyer.code == code:
+                return buyer
+        return None
+
+    def show_catalog(self):
+        if not self.catalog:
+            print("There are no items in the catalog.")
             return
 
-        print("\n----- PRODUCT INVENTORY -----")
+        print("\n--------- CATALOG ---------")
 
-        for product in self.inventory:
-            product.display()
+        for item in self.catalog:
+            print(
+                f"Code: {item.code}, "
+                f"Name: {item.description}, "
+                f"Price: ₹{item.amount}, "
+                f"Available: {item.available}"
+            )
 
-    def purchase_product(self):
-        customer_number = int(input("Customer ID: "))
-        product_number = int(input("Product ID: "))
-        amount = int(input("Enter quantity: "))
+    def put_in_basket(self):
+        buyer_code = int(input("Enter buyer ID: "))
+        item_code = int(input("Enter item code: "))
+        requested = int(input("Enter quantity: "))
 
-        customer = self.search_customer(customer_number)
-        product = self.search_product(product_number)
+        buyer = self.locate_buyer(buyer_code)
+        item = self.locate_item(item_code)
 
-        if customer is None:
-            print("Customer does not exist.")
+        if buyer is None or item is None:
+            print("Invalid buyer or item.")
             return
 
-        if product is None:
-            print("Product does not exist.")
+        if requested <= 0:
+            print("Quantity must be greater than zero.")
             return
 
-        if amount <= 0:
-            print("Enter a valid quantity.")
+        if requested > item.available:
+            print("Requested quantity is unavailable.")
             return
 
-        if amount > product.quantity:
-            print("Insufficient stock.")
-            return
+        buyer.basket.append({
+            "item": item,
+            "count": requested
+        })
 
-        customer.add_item(product, amount)
-        print("Item added to shopping cart.")
+        print("Item placed in basket.")
 
-    def generate_bill(self):
-        customer_number = int(input("Customer ID: "))
-        customer = self.search_customer(customer_number)
+    def calculate_total(self, basket):
+        total = 0
 
-        if customer is None:
-            print("Customer not found.")
-            return
+        for entry in basket:
+            item = entry["item"]
+            count = entry["count"]
+            total += item.amount * count
 
-        if not customer.shopping_cart:
-            print("Shopping cart is empty.")
-            return
+        return total
 
-        bill = 0
-
-        for product, amount in customer.shopping_cart:
-            bill += product.cost * amount
-
-        if bill >= 2000:
-            discount_rate = 0.10
-        elif bill >= 1000:
-            discount_rate = 0.05
+    def apply_discount(self, total):
+        if total >= 2000:
+            return total * 0.90
+        elif total >= 1000:
+            return total * 0.95
         else:
-            discount_rate = 0
+            return total
 
-        discount_value = bill * discount_rate
-        payable = bill - discount_value
+    def finalize_purchase(self):
+        buyer_code = int(input("Enter buyer ID: "))
+        buyer = self.locate_buyer(buyer_code)
 
-        for product, amount in customer.shopping_cart:
-            product.quantity -= amount
+        if buyer is None:
+            print("Buyer not found.")
+            return
 
-        print("\n========== INVOICE ==========")
-        print("Customer:", customer.username)
-        print("Total price:", bill)
-        print("Discount:", discount_value)
-        print("Amount to pay:", payable)
-        print("=============================")
+        if len(buyer.basket) == 0:
+            print("Basket is empty.")
+            return
 
-        customer.shopping_cart = []
+        subtotal = self.calculate_total(buyer.basket)
+        payable = self.apply_discount(subtotal)
+
+        for entry in buyer.basket:
+            entry["item"].available -= entry["count"]
+
+        print("\n========= RECEIPT =========")
+        print("Buyer:", buyer.fullname)
+        print("Subtotal: ₹", subtotal)
+        print("Final amount: ₹", payable)
+        print("===========================")
+
+        buyer.basket.clear()
 
 
-def run_store():
-    shop = ShoppingStore()
+def start_market():
+    market = Market()
+
+    actions = {
+        "1": market.register_item,
+        "2": market.register_buyer,
+        "3": market.show_catalog,
+        "4": market.put_in_basket,
+        "5": market.finalize_purchase
+    }
 
     while True:
         print("""
-========= SHOPPING MENU =========
+========== MARKET SYSTEM ==========
 
-1. Create Product
-2. Register Customer
-3. Display Inventory
-4. Purchase Product
-5. Generate Bill
-6. Close Store
+1. Register Item
+2. Register Buyer
+3. Show Catalog
+4. Add Item to Basket
+5. Finalize Purchase
+6. Exit
 """)
 
-        option = input("Select an option: ")
+        choice = input("Choose an action: ")
 
-        if option == "1":
-            shop.create_product()
-
-        elif option == "2":
-            shop.create_customer()
-
-        elif option == "3":
-            shop.display_inventory()
-
-        elif option == "4":
-            shop.purchase_product()
-
-        elif option == "5":
-            shop.generate_bill()
-
-        elif option == "6":
-            print("Store closed.")
+        if choice == "6":
+            print("Thank you for visiting!")
             break
 
+        action = actions.get(choice)
+
+        if action:
+            action()
         else:
-            print("Please select a valid option.")
+            print("Invalid selection.")
 
 
-run_store()
+if __name__ == "__main__":
+    start_market()
