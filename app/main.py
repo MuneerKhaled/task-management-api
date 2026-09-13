@@ -1,193 +1,163 @@
 
 class Product:
-    def __init__(self, pid, title, price, quantity):
-        self.pid = pid
-        self.title = title
+    def __init__(self, code, name, price, stock):
+        self.code = code
+        self.name = name
         self.price = price
-        self.quantity = quantity
+        self.stock = stock
 
 
 class Customer:
-    def __init__(self, cid, username):
-        self.cid = cid
-        self.username = username
-        self.items = []
+    def __init__(self, code, name):
+        self.code = code
+        self.name = name
+        self.cart = []
 
 
-class Shop:
+class Store:
     def __init__(self):
-        self.product_list = []
-        self.customer_list = []
-        self.p_count = 0
-        self.c_count = 0
+        self.products = []
+        self.customers = []
+        self.product_id = 1
+        self.customer_id = 1
 
-    def find_product(self, pid):
-        for product in self.product_list:
-            if product.pid == pid:
-                return product
-        return None
-
-    def find_customer(self, cid):
-        for customer in self.customer_list:
-            if customer.cid == cid:
-                return customer
+    def find(self, collection, code, attribute):
+        for obj in collection:
+            if getattr(obj, attribute) == code:
+                return obj
         return None
 
     def create_product(self):
-        self.p_count += 1
+        name = input("Name of product: ")
+        price = float(input("Price of product: "))
+        stock = int(input("Quantity in stock: "))
 
-        title = input("Enter product name: ")
-        price = float(input("Enter product price: "))
-        quantity = int(input("Enter stock quantity: "))
-
-        product = Product(
-            self.p_count,
-            title,
-            price,
-            quantity
+        self.products.append(
+            Product(self.product_id, name, price, stock)
         )
 
-        self.product_list.append(product)
-        print("Product added successfully.")
+        print("Product ID:", self.product_id)
+        self.product_id += 1
 
     def create_customer(self):
-        self.c_count += 1
+        name = input("Name of customer: ")
 
-        username = input("Enter customer name: ")
-
-        customer = Customer(
-            self.c_count,
-            username
+        self.customers.append(
+            Customer(self.customer_id, name)
         )
 
-        self.customer_list.append(customer)
-        print("Customer registered successfully.")
+        print("Customer ID:", self.customer_id)
+        self.customer_id += 1
 
     def show_products(self):
-        if len(self.product_list) == 0:
-            print("No products in store.")
+        print("\n========== PRODUCTS ==========")
+
+        if not self.products:
+            print("No products available.")
             return
 
-        print("\n----- STORE PRODUCTS -----")
-
-        for product in self.product_list:
+        for p in self.products:
             print(
-                f"{product.pid} | {product.title} | "
-                f"₹{product.price} | Stock: {product.quantity}"
+                f"ID: {p.code} | "
+                f"Name: {p.name} | "
+                f"Price: ₹{p.price} | "
+                f"Stock: {p.stock}"
             )
 
-    def add_item(self):
-        cid = int(input("Enter customer ID: "))
-        pid = int(input("Enter product ID: "))
-        quantity = int(input("Enter quantity: "))
+    def add_to_cart(self):
+        cid = int(input("Customer ID: "))
+        pid = int(input("Product ID: "))
+        quantity = int(input("Quantity: "))
 
-        customer = self.find_customer(cid)
-        product = self.find_product(pid)
+        customer = self.find(self.customers, cid, "code")
+        product = self.find(self.products, pid, "code")
+
+        if customer is None or product is None:
+            print("Invalid customer or product.")
+            return
+
+        if quantity <= 0 or quantity > product.stock:
+            print("Invalid quantity or insufficient stock.")
+            return
+
+        customer.cart.append((product, quantity))
+        print("Added to cart successfully.")
+
+    def calculate_discount(self, total):
+        if total >= 2000:
+            return 0.10
+        if total >= 1000:
+            return 0.05
+        return 0
+
+    def checkout(self):
+        cid = int(input("Customer ID: "))
+        customer = self.find(self.customers, cid, "code")
 
         if customer is None:
             print("Customer not found.")
             return
 
-        if product is None:
-            print("Product not found.")
-            return
-
-        if quantity <= 0:
-            print("Invalid quantity.")
-            return
-
-        if quantity > product.quantity:
-            print("Insufficient stock.")
-            return
-
-        customer.items.append((product, quantity))
-        print("Item added to cart.")
-
-    def calculate_price(self, customer):
-        total = 0
-
-        for product, quantity in customer.items:
-            total += product.price * quantity
-
-        return total
-
-    def print_bill(self):
-        cid = int(input("Enter customer ID: "))
-        customer = self.find_customer(cid)
-
-        if customer is None:
-            print("Customer not found.")
-            return
-
-        if not customer.items:
+        if len(customer.cart) == 0:
             print("Cart is empty.")
             return
 
-        total = self.calculate_price(customer)
+        total = 0
 
-        if total >= 2000:
-            discount = 10
-        elif total >= 1000:
-            discount = 5
-        else:
-            discount = 0
+        for product, quantity in customer.cart:
+            total += product.price * quantity
 
-        discount_amount = total * discount / 100
-        payable = total - discount_amount
+        discount_rate = self.calculate_discount(total)
+        discount_amount = total * discount_rate
+        final_total = total - discount_amount
 
-        for product, quantity in customer.items:
-            product.quantity -= quantity
+        for product, quantity in customer.cart:
+            product.stock -= quantity
 
-        print("\n========== BILL ==========")
-        print("Customer:", customer.username)
-        print("Total amount:", total)
-        print("Discount:", discount, "%")
-        print("Discount amount:", discount_amount)
-        print("Final amount:", payable)
-        print("===========================")
+        print("\n========== INVOICE ==========")
+        print("Customer:", customer.name)
+        print("Subtotal:", total)
+        print("Discount:", discount_amount)
+        print("Amount payable:", final_total)
+        print("=============================")
 
-        customer.items.clear()
+        customer.cart.clear()
 
 
-def start():
-    shop = Shop()
+def main():
+    store = Store()
+
+    commands = {
+        "1": store.create_product,
+        "2": store.create_customer,
+        "3": store.show_products,
+        "4": store.add_to_cart,
+        "5": store.checkout
+    }
 
     while True:
         print("""
-========= SHOPPING SYSTEM =========
+========== STORE SYSTEM ==========
 
 1. Create Product
 2. Create Customer
 3. Show Products
-4. Add Item to Cart
-5. Print Bill
+4. Add to Cart
+5. Checkout
 6. Exit
 """)
 
-        choice = input("Enter your choice: ")
+        choice = input("Select option: ")
 
-        if choice == "1":
-            shop.create_product()
-
-        elif choice == "2":
-            shop.create_customer()
-
-        elif choice == "3":
-            shop.show_products()
-
-        elif choice == "4":
-            shop.add_item()
-
-        elif choice == "5":
-            shop.print_bill()
-
-        elif choice == "6":
-            print("Program closed.")
+        if choice == "6":
+            print("Thank you for using the store.")
             break
 
+        if choice in commands:
+            commands[choice]()
         else:
-            print("Invalid choice.")
+            print("Invalid option.")
 
 
 if __name__ == "__main__":
-    start()
+    main()
