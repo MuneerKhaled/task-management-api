@@ -24,12 +24,14 @@ class Shop:
         for product in self.products:
             if product.product_id == product_id:
                 return product
+
         return None
 
     def find_customer(self, customer_id):
         for customer in self.customers:
             if customer.customer_id == customer_id:
                 return customer
+
         return None
 
     def add_product(self):
@@ -63,18 +65,18 @@ class Shop:
         print("Customer registered successfully.")
 
     def show_products(self):
-        if not self.products:
-            print("No products found.")
+        if len(self.products) == 0:
+            print("No products available.")
             return
 
-        print("\n========== PRODUCT LIST ==========")
+        print("\n========== PRODUCTS ==========")
 
         for product in self.products:
             print(
                 f"ID: {product.product_id} | "
                 f"Name: {product.name} | "
                 f"Price: ₹{product.price} | "
-                f"Quantity: {product.quantity}"
+                f"Stock: {product.quantity}"
             )
 
     def add_to_cart(self):
@@ -94,11 +96,11 @@ class Shop:
             return
 
         if quantity <= 0:
-            print("Quantity must be greater than zero.")
+            print("Quantity must be greater than 0.")
             return
 
         if quantity > product.quantity:
-            print("Insufficient stock.")
+            print("Not enough stock.")
             return
 
         customer.cart.append({
@@ -106,7 +108,7 @@ class Shop:
             "quantity": quantity
         })
 
-        print("Product added to cart successfully.")
+        print("Product added to cart.")
 
     def calculate_total(self, customer):
         total = 0
@@ -128,7 +130,7 @@ class Shop:
             print("Customer not found.")
             return
 
-        if not customer.cart:
+        if len(customer.cart) == 0:
             print("Cart is empty.")
             return
 
@@ -144,8 +146,9 @@ class Shop:
             discount = 0
 
         discount_amount = total * discount / 100
-        payable_amount = total - discount_amount
+        final_amount = total - discount_amount
 
+        # Reduce stock
         for item in customer.cart:
             product = item["product"]
             quantity = item["quantity"]
@@ -160,25 +163,28 @@ class Shop:
             product = item["product"]
             quantity = item["quantity"]
 
+            amount = product.price * quantity
+
             print(
-                f"{product.name} x {quantity} "
-                f"= ₹{product.price * quantity}"
+                f"{product.name} x {quantity} = ₹{amount}"
             )
 
         print("--------------------------------")
         print("Total Amount: ₹", total)
         print("Discount:", discount, "%")
         print("Discount Amount: ₹", discount_amount)
-        print("Final Amount: ₹", payable_amount)
+        print("Final Amount: ₹", final_amount)
         print("================================")
 
         customer.cart.clear()
 
 
 def start_shop():
+
     shop = Shop()
 
     while True:
+
         print("""
 ========== SHOPPING SYSTEM ==========
 
@@ -188,6 +194,8 @@ def start_shop():
 4. Add Product to Cart
 5. Print Bill
 6. Exit
+
+======================================
 """)
 
         choice = input("Enter your choice: ")
@@ -208,7 +216,7 @@ def start_shop():
             shop.print_bill()
 
         elif choice == "6":
-            print("Thank you for using our shopping system.")
+            print("Thank you for using the shopping system.")
             break
 
         else:
@@ -217,4 +225,3 @@ def start_shop():
 
 if __name__ == "__main__":
     start_shop()
-
